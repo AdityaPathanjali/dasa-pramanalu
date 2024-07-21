@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expandable List</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f4f8;
+            padding: 2rem;
+            margin: 0;
+        }
+        h2 {
+            color: #333;
+        }
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        li {
+            background-color: #fff;
+            margin: 0.5rem 0;
+            padding: 0.75rem;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        li:hover {
+            background-color: #f1f1f1;
+        }
+        .expanded {
+            margin-left: 20px;
+        }
+        .year {
+            float: right;
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+    <h2>Expandable List of Information</h2>
+    <ul id="positions-list"></ul>
+    <script>
+        const data = [
+            { position: 'ర', year: 6 },
+            { position: 'చ', year: 10 },
+            { position: 'కు', year: 7 },
+            { position: 'రా', year: 18 },
+            { position: 'ગુ', year: 16 },
+            { position: 'శ', year: 19 },
+            { position: 'బు', year: 17 },
+            { position: 'కే', year: 7 },
+            { position: 'శు', year: 20 }
+        ];
+
+        const dateOfBirth = new Date(localStorage.getItem('dateOfBirth'));
+        const mahadasa = localStorage.getItem('mahadasa');
+        const positionsList = document.getElementById('positions-list');
+        let storedData = {};
+
+        function createListItem(position, year, level = 0) {
+            const futureDate = new Date(dateOfBirth);
+            futureDate.setFullYear(futureDate.getFullYear() + year);
+
+            const li = document.createElement('li');
+            li.innerHTML = `${position} <span class="year">${futureDate.toDateString()}</span>`;
+            li.dataset.level = level;
+            li.dataset.position = position;
+            li.dataset.year = year;
+            li.addEventListener('click', () => handleItemClick(li));
+            return li;
+        }
+
+        function handleItemClick(listItem) {
+            const position = listItem.dataset.position;
+            const year = parseFloat(listItem.dataset.year);
+            const level = parseInt(listItem.dataset.level);
+
+            if (level >= 3) return;
+
+            if (listItem.nextElementSibling && listItem.nextElementSibling.classList.contains('expanded')) {
+                listItem.nextElementSibling.remove();
+            } else {
+                const index = data.findIndex(item => item.position === position.split('.').pop());
+                const expandedList = document.createElement('ul');
+                expandedList.classList.add('expanded');
+                expandedList.style.display = 'block';
+
+                for (let i = 0; i < data.length; i++) {
+                    const currentIndex = (index + i) % data.length;
+                    const item = data[currentIndex];
+                    const calculatedYear = (year * item.year) / 120;
+                    expandedList.appendChild(createListItem(position + '.' + item.position, calculatedYear, level + 1));
+                }
+                listItem.insertAdjacentElement('afterend', expandedList);
+            }
+        }
+
+        function convertToYearsMonthsDays(year) {
+            const totalDays = Math.round(year * 365);
+            const years = Math.floor(totalDays / 365);
+            const remainingDays = totalDays % 365;
+            const months = Math.floor(remainingDays / 30);
+            const days = remainingDays % 30;
+            return `${years}సం - ${months}నె - ${days}రో`;
+        }
+
+        data.forEach(item => {
+            positionsList.appendChild(createListItem(item.position, item.year));
+            storedData[item.position] = item.year;
+        });
+
+        function populateStoredData(prefix, level) {
+            if (level >= 4) return;
+            const index = data.findIndex(item => item.position === prefix.split('.').pop());
+            for (let i = 0; i < data.length; i++) {
+                const currentIndex = (index + i) % data.length;
+                const item = data[currentIndex];
+                const newKey = prefix + '.' + item.position;
+                const newYear = (storedData[prefix] * item.year) / 120;
+                storedData[newKey] = newYear;
+                populateStoredData(newKey, level + 1);
+            }
+        }
+
+        data.forEach(item => populateStoredData(item.position, 1));
+    </script>
+</body>
+</html>
